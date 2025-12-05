@@ -1,0 +1,9 @@
+{
+	"name": "df-azureprojectvishnu",
+	"location": "southindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "ffa1bec3-ea23-4299-bfcd-2f1b60bc26b0",
+		"tenantId": "87e039ed-1576-4f9e-86a6-02aa04674a0d"
+	}
+}
