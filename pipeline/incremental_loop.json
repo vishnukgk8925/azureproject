@@ -317,13 +317,14 @@
 				}
 			},
 			{
-				"name": "Web1",
+				"name": "Alerts",
 				"type": "WebActivity",
 				"dependsOn": [
 					{
 						"activity": "ForEach1",
 						"dependencyConditions": [
-							"Succeeded"
+							"Succeeded",
+							"Failed"
 						]
 					}
 				],
@@ -334,7 +335,15 @@
 					"secureOutput": false,
 					"secureInput": false
 				},
-				"userProperties": []
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"url": "https://prod-10.westindia.logic.azure.com:443/workflows/15b133f0bc6642bb9b1e1be6c5d567c5/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=LNawzf8kXncgwVj09dUslH7uRKgLntaySsntn2BArlo",
+					"body": {
+						"value": "{\n    \"pipeline_name\":\"@{pipeline().Pipeline}\",\n    \"pipeline_runId\" :\"@{pipeline().RunId}\"\n}",
+						"type": "Expression"
+					}
+				}
 			}
 		],
 		"parameters": {
