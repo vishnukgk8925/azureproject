@@ -3,6 +3,34 @@
 	"properties": {
 		"activities": [
 			{
+				"name": "Alerts",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "ForEach1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"url": "https://prod-10.westindia.logic.azure.com:443/workflows/15b133f0bc6642bb9b1e1be6c5d567c5/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=LNawzf8kXncgwVj09dUslH7uRKgLntaySsntn2BArlo",
+					"body": {
+						"value": "{\n    \"pipeline_name\":\"@{pipeline().Pipeline}\",\n    \"pipeline_runId\" :\"@{pipeline().RunId}\"\n}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
 				"name": "ForEach1",
 				"type": "ForEach",
 				"dependsOn": [],
@@ -19,13 +47,13 @@
 							"type": "Copy",
 							"dependsOn": [
 								{
-									"activity": "current",
+									"activity": "last_cdc",
 									"dependencyConditions": [
 										"Succeeded"
 									]
 								},
 								{
-									"activity": "last_cdc",
+									"activity": "current",
 									"dependencyConditions": [
 										"Succeeded"
 									]
@@ -125,7 +153,10 @@
 											"value": "@{item().table}_cdc",
 											"type": "Expression"
 										},
-										"file": "cdc.json"
+										"file": {
+											"value": "cdc.json",
+											"type": "Expression"
+										}
 									}
 								},
 								"firstRowOnly": false
@@ -167,7 +198,7 @@
 								},
 								"ifFalseActivities": [
 									{
-										"name": "DeleteEmptyFile",
+										"name": "Delete1",
 										"type": "Delete",
 										"dependsOn": [],
 										"policy": {
@@ -205,7 +236,36 @@
 								],
 								"ifTrueActivities": [
 									{
-										"name": "update_last_cdc",
+										"name": "max_cdc",
+										"type": "Script",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"linkedServiceName": {
+											"referenceName": "azure_sql",
+											"type": "LinkedServiceReference"
+										},
+										"typeProperties": {
+											"scripts": [
+												{
+													"type": "Query",
+													"text": {
+														"value": "SELECT MAX(@{item().cdc_col}) as cdc FROM @{item().schema}.@{item().table}",
+														"type": "Expression"
+													}
+												}
+											],
+											"scriptBlockExecutionTimeout": "02:00:00"
+										}
+									},
+									{
+										"name": "Update_last_cdc",
 										"type": "Copy",
 										"dependsOn": [
 											{
@@ -261,8 +321,14 @@
 												"type": "DatasetReference",
 												"parameters": {
 													"container": "bronze",
-													"folder": "@{item().table}_cdc",
-													"file": "empty.json"
+													"folder": {
+														"value": "@{item().table}_cdc",
+														"type": "Expression"
+													},
+													"file": {
+														"value": "empty.json",
+														"type": "Expression"
+													}
 												}
 											}
 										],
@@ -276,72 +342,18 @@
 														"value": "@{item().table}_cdc",
 														"type": "Expression"
 													},
-													"file": "cdc.json"
-												}
-											}
-										]
-									},
-									{
-										"name": "max_cdc",
-										"type": "Script",
-										"dependsOn": [],
-										"policy": {
-											"timeout": "0.12:00:00",
-											"retry": 0,
-											"retryIntervalInSeconds": 30,
-											"secureOutput": false,
-											"secureInput": false
-										},
-										"userProperties": [],
-										"linkedServiceName": {
-											"referenceName": "azure_sql",
-											"type": "LinkedServiceReference"
-										},
-										"typeProperties": {
-											"scripts": [
-												{
-													"type": "Query",
-													"text": {
-														"value": "SELECT MAX(@{item().cdc_col}) as cdc FROM @{item().schema}.@{item().table}",
+													"file": {
+														"value": "cdc.json",
 														"type": "Expression"
 													}
 												}
-											],
-											"scriptBlockExecutionTimeout": "02:00:00"
-										}
+											}
+										]
 									}
 								]
 							}
 						}
 					]
-				}
-			},
-			{
-				"name": "Alerts",
-				"type": "WebActivity",
-				"dependsOn": [
-					{
-						"activity": "ForEach1",
-						"dependencyConditions": [
-							"Failed"
-						]
-					}
-				],
-				"policy": {
-					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"method": "POST",
-					"url": "https://prod-10.westindia.logic.azure.com:443/workflows/15b133f0bc6642bb9b1e1be6c5d567c5/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=LNawzf8kXncgwVj09dUslH7uRKgLntaySsntn2BArlo",
-					"body": {
-						"value": "{\n    \"pipeline_name\":\"@{pipeline().Pipeline}\",\n    \"pipeline_runId\" :\"@{pipeline().RunId}\"\n}",
-						"type": "Expression"
-					}
 				}
 			}
 		],
